@@ -11,6 +11,45 @@ class GetContactAPI:
     def __init__(self):
         self.updater = UpdateConfig()
         self.requester = Requester(self.updater.get_config())
+    
+    def get_phone_by_name(self, name):
+        response = self.requester.get_name(name)
+        if response:
+            phone = response['result']['profile']['phone']
+            surname = response['result']['profile']['surname']
+            if not name and not surname:
+                user_name = None
+            else:
+                user_name = f'{parse_none(name)} {parse_none(surname)}'
+
+            country_code = response['result']['profile']['countryCode']
+            country = response['result']['profile']['country']
+
+            if not country:
+                country_name = f"{parse_none(country_code)}"
+            else:
+                country_name = f'{country} {parse_none(country_code)}'
+
+            result = {"name": user_name,
+                      "phoneNumber": response['result']['profile']['phoneNumber'],
+                      "country": country_name,
+                      "displayName": response['result']['profile']['displayName'],
+                      "profileImage": response['result']['profile']['profileImage'],
+                      "email": response['result']['profile']['email'],
+                      "is_spam": True if response['result']['spamInfo']["degree"] == "high" else False}
+
+            remain_count = response['result']['subscriptionInfo']['usage']['search']['remainingCount']
+            self.updater.update_remain_count_by_token(config.TOKEN, remain_count)
+            self.requester.update_config(self.updater.get_config())
+            return result
+        else:
+            return {"name": None,
+                    "phoneNumber": phoneNumber,
+                    "country": config.COUNTRY,
+                    "displayName": "Not Found",
+                    "profileImage": None,
+                    "email": None,
+                    "is_spam": False}
 
     def get_name_by_phone(self, phoneNumber):
         response = self.requester.get_phone_name(phoneNumber)
